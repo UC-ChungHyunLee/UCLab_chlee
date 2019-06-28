@@ -10,17 +10,19 @@
 #define BUFFERSIZE 10000
 
 #define POSSIBLE 0
-#define IMPOSSIBLE 1
-#define INDETERMINATE 2
+#define DUALROOT 1
+#define IMPOSSIBLE 2
+#define INDETERMINATE 3
+#define CONGRUENCE 4
+
+#define LINEAR 0
+#define CIRCULAR 1
 
 typedef struct dataSave {
-	int ptr_corX; // Pointer of coordinate which crossed between equation_1 and equation_2
-	int ptr_eq1; // Pointer of SU which is one of the crossed (equation_1)
-	int ptr_eq2; // Pointer of SU which is one of the crossed (equation_2)
-	int ptr_bool; // Pointer of relationship between equation_1 and equation_2 such as having a root, impossible and indeterminate
+	int ptr;
 	float cross_corX[BUFFERSIZE];
-	float cross_eq1[BUFFERSIZE][BUFFERSIZE];
-	float cross_eq2[BUFFERSIZE][BUFFERSIZE];
+	float cross_eq1[BUFFERSIZE];
+	float cross_eq2[BUFFERSIZE];
 	bool cross_type[BUFFERSIZE];
 }db;
 
@@ -37,6 +39,10 @@ typedef struct CircularEquation {
 	float radius;
 	float angle_min;
 	float angle_max;
+	float corX_min;
+	float corX_max;
+	float corY_min;
+	float corY_max;
 } ceq;
 
 typedef struct Sector {
