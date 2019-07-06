@@ -1,53 +1,166 @@
 #pragma once
 #include "config.h"
+#define M_PI 3.14159265358979323846
 
 // Declare
 
-void checkRange(ceq ceq_t);
+double getRadian(float angle);
 
-void findCross(leq leq_1, leq leq_2, db save);
-void findCross(leq leq_1, ceq ceq_1, db save);
-void findCross(ceq ceq_1, ceq ceq_2, db save);
+void init_SU(SU* su);
+void init_DB(db* save);
+
+void checkRange(ceq* ceq_t);
+void sortCoordinate(db* save);
+
+void findCross(leq leq_1, leq leq_2, db* save);
+void findCross(leq leq_1, ceq ceq_1, db* save);
+void findCross(ceq ceq_1, ceq ceq_2, db* save);
+
+void cal(SU su1, SU su2, db* save);
 
 void integral(leq leq_1, leq leq_2, db save);
 void integral(leq leq_1, ceq ceq_1, db save);
 void integral(ceq ceq_1, ceq ceq_2, db save);
 
+
+
 // Define
 
-void checkRange(ceq ceq_t) {
-	float x_min = cos(getRadian(ceq_t.angle_min));
-	float x_max = cos(getRadian(ceq_t.angle_max));
-	float y_min = sin(getRadian(ceq_t.angle_min));
-	float y_max = sin(getRadian(ceq_t.angle_max));
+double getRadian(float angle) {
+	return angle * (M_PI / 180);
+}
 
-	for (int i = ceq_t.angle_min; i <= ceq_t.angle_max; i++) {
+void init_SU(SU* su) {
+	
+	for (int i = 0; i < 4; i++) {
+		su->beam[i].ch = 0;
+		su->beam[i].root = su->index;
+		su->beam[i].index = i;
+		su->beam[i].fleq.root = su->index;
+		su->beam[i].fleq.num = 1;
+		su->beam[i].sleq.root = su->index;
+		su->beam[i].sleq.num = 2;
+		su->beam[i].tceq.root = su->index;
+		su->beam[i].fleq.index = su->beam[i].index;
+		su->beam[i].sleq.index = su->beam[i].index;
+		su->beam[i].tceq.index = su->beam[i].index;
+
+		su->beam[i].fleq.gradient = tan(getRadian(45 + 90 * i));
+		su->beam[i].fleq.basis = su->corY - su->corX * su->beam[i].fleq.gradient;
+		if (cos(getRadian(45 + 90 * i)) < 0) {
+			su->beam[i].fleq.corX_min = su->corX + su->radius * (getRadian(45 + 90 * i));
+			su->beam[i].fleq.corX_max = su->corX;
+		}
+		else {
+			su->beam[i].fleq.corX_max = su->corX + su->radius * cos(getRadian(45 + 90 * i));
+			su->beam[i].fleq.corX_min = su->corX;
+		}
+
+		su->beam[i].sleq.gradient = tan(getRadian(45 + 90 * (i + 1)));
+		su->beam[i].sleq.basis = su->corY - su->corX * su->beam[i].sleq.gradient;
+		if (cos(getRadian(45 + 90 * (i + 1))) < 0) {
+			su->beam[i].sleq.corX_min = su->corX + su->radius * cos(getRadian(45 + 90 * (i + 1)));
+			su->beam[i].sleq.corX_max = su->corX;
+		}
+		else {
+			su->beam[i].sleq.corX_max = su->corX + su->radius * cos(getRadian(45 + 90 * (i + 1)));
+			su->beam[i].sleq.corX_min = su->corX;
+		}
+
+		su->beam[i].tceq.angle_min = 45 + 90 * i;
+		su->beam[i].tceq.angle_max = 45 + 90 * (i + 1);
+		su->beam[i].tceq.corX = su->corX;
+		su->beam[i].tceq.corY = su->corY;
+		su->beam[i].tceq.radius = su->radius;
+		checkRange(&su->beam[i].tceq);
+	}
+}
+
+void init_DB(db* save) {
+	save->ptr = 0;
+	for (int i = 0; i < BUFFERSIZE; i++) {
+		save->cross_corX[i] = 0.0;
+		save->cross_corX[i] = 0.0;
+		save->cross_type[i] = -1;
+		save->cross_eq1[i] = -1;
+		save->cross_eq2[i] = -1;
+		save->cross_ceq1[i] = ceq_temp;
+		save->cross_ceq2[i] = ceq_temp;
+		save->cross_leq1[i] = leq_temp;
+		save->cross_leq2[i] = leq_temp;		
+	}
+}
+
+void checkRange(ceq* ceq_t) {
+	float x_min = ceq_t->corX + ceq_t->radius * cos(getRadian(ceq_t->angle_min));
+	float x_max = ceq_t->corX + ceq_t->radius * cos(getRadian(ceq_t->angle_max));
+	float y_min = ceq_t->corY + ceq_t->radius * sin(getRadian(ceq_t->angle_min));
+	float y_max = ceq_t->corY + ceq_t->radius * sin(getRadian(ceq_t->angle_max));
+
+	for (int i = ceq_t->angle_min; i <= ceq_t->angle_max; i++) {
 		// find corX_max
-		if (cos(getRadian(i)) >= x_max) {
+		if (ceq_t->corX + ceq_t->radius * cos(getRadian(i)) >= x_max) {
 			x_max = cos(getRadian(i));
 		}
 		// find corX_min
-		if (cos(getRadian(i) <= x_min)) {
+		if (ceq_t->corX + ceq_t->radius * cos(getRadian(i) <= x_min)) {
 			x_min = cos(getRadian(i));
 		}
 		// find corY_max
-		if (sin(getRadian(i)) >= y_max) {
+		if (ceq_t->corY + ceq_t->radius * sin(getRadian(i)) >= y_max) {
 			y_max = sin(getRadian(i));
 		}
 		// find corY_min
-		if (sin(getRadian(i)) <= y_min) {
+		if (ceq_t->corY + ceq_t->radius * sin(getRadian(i)) <= y_min) {
 			y_min = sin(getRadian(i));
 		}	
 	}
 
-	ceq_t.corX_max = x_max;
-	ceq_t.corX_min = x_min;
-	ceq_t.corY_max = y_max;
-	ceq_t.corY_min = y_min;
+	ceq_t->corX_max = x_max;
+	ceq_t->corX_min = x_min;
+	ceq_t->corY_max = y_max;
+	ceq_t->corY_min = y_min;
 }
 
+// Bubble Sorting
+void sortCoordinate(db* save) {
+	float temp_corX;
+	float temp_eq_1;
+	float temp_eq_2;
+	leq temp_leq_1;
+	leq temp_leq_2;
+	ceq temp_ceq_1;
+	ceq temp_ceq_2;
+	for (int i = 0; i < save->ptr; i++) {
+		for (int k = i + 1; k < save->ptr; k++) {
+			if (save->cross_corX[k] < save->cross_corX[i]) {
+				temp_corX = save->cross_corX[i];
+				temp_eq_1 = save->cross_eq1[i];
+				temp_eq_2 = save->cross_eq2[i];
+				temp_leq_1 = save->cross_leq1[i];
+				temp_leq_2 = save->cross_leq2[i];
+				temp_ceq_1 = save->cross_ceq1[i];
+				temp_ceq_2 = save->cross_ceq2[i];
+				save->cross_corX[i] = save->cross_corX[k];
+				save->cross_eq1[i] = save->cross_eq1[k];
+				save->cross_eq2[i] = save->cross_eq2[k];
+				save->cross_leq1[i] = save->cross_leq1[k];
+				save->cross_leq2[i] = save->cross_leq2[k];
+				save->cross_ceq1[i] = save->cross_ceq1[k];
+				save->cross_ceq2[i] = save->cross_ceq2[k];
+				save->cross_corX[k] = temp_corX;
+				save->cross_eq1[k] = temp_eq_1;
+				save->cross_eq2[k] = temp_eq_2;
+				save->cross_leq1[k] = temp_leq_1;
+				save->cross_leq2[k] = temp_leq_2;
+				save->cross_ceq1[k] = temp_ceq_1;				
+				save->cross_ceq2[k] = temp_ceq_2;
+			}
+		}
+	}
+}
 
-void findCross(leq leq_1, leq leq_2, db save) {
+void findCross(leq leq_1, leq leq_2, db* save) {
 	float diff_gradient = leq_1.gradient - leq_2.gradient;	// leq_1 - leq_2 (left term)
 	float diff_basis = leq_2.basis - leq_1.basis;			// leq_2 - leq_1 (right term)
 	float temp_corX = 0.0;
@@ -56,19 +169,27 @@ void findCross(leq leq_1, leq leq_2, db save) {
 	if (diff_gradient == 0) {
 		// impossible
 		if (diff_basis == 0) {
-			save.cross_type[save.ptr] = IMPOSSIBLE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = LINEAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = LINEAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_2;
+			save->cross_ceq1[save->ptr] = ceq_temp;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		// indeterminate
 		else {
-			save.cross_type[save.ptr] = INDETERMINATE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = LINEAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = INDETERMINATE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = LINEAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_2;
+			save->cross_ceq1[save->ptr] = ceq_temp;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 	}
 	// Having a root
@@ -76,24 +197,32 @@ void findCross(leq leq_1, leq leq_2, db save) {
 		temp_corX = diff_basis / diff_gradient;
 		// Check that the cross coordinate is in the line segment
 		if ((leq_1.corX_min <= temp_corX) && (leq_1.corX_max >= temp_corX) && (leq_2.corX_min <= temp_corX) && (leq_2.corX_max >= temp_corX)) {
-			save.cross_type[save.ptr] = POSSIBLE;
-			save.cross_corX[save.ptr] = temp_corX;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = LINEAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = temp_corX;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = LINEAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_2;
+			save->cross_ceq1[save->ptr] = ceq_temp;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		// Else, it means that the cross coordinate is not in the line segment
 		else {
-			save.cross_type[save.ptr] = IMPOSSIBLE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = LINEAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = LINEAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_2;
+			save->cross_ceq1[save->ptr] = ceq_temp;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 	}
 }
 
-void findCross(leq leq_1, ceq ceq_1, db save) {
+void findCross(leq leq_1, ceq ceq_1, db* save) {
 	float temp_a = leq_1.gradient * leq_1.gradient + 1;
 	float temp_b = ((-2.0) * ceq_1.corX) + (2 * leq_1.gradient * (leq_1.basis - ceq_1.corY));
 	float temp_c = (ceq_1.corX * ceq_1.corX) + (leq_1.basis - ceq_1.corY) * (leq_1.basis - ceq_1.corY) - (ceq_1.radius * ceq_1.radius);
@@ -102,14 +231,18 @@ void findCross(leq leq_1, ceq ceq_1, db save) {
 
 	// impossible
 	if (determinate < 0) {
-		save.cross_type[save.ptr] = IMPOSSIBLE;
-		save.cross_corX[save.ptr] = 0;
-		save.cross_eq1[save.ptr] = LINEAR;
-		save.cross_eq2[save.ptr] = CIRCULAR;
-		save.ptr++;
+		save->cross_type[save->ptr] = IMPOSSIBLE;
+		save->cross_corX[save->ptr] = 0;
+		save->cross_eq1[save->ptr] = LINEAR;
+		save->cross_eq2[save->ptr] = CIRCULAR;
+		save->cross_leq1[save->ptr] = leq_1;
+		save->cross_leq2[save->ptr] = leq_temp;
+		save->cross_ceq1[save->ptr] = ceq_1;
+		save->cross_ceq2[save->ptr] = ceq_temp;
+		save->ptr++;
 	}
 	// dual root
-	else if (determinate = 0) {
+	else if (determinate == 0) {
 		float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / 2 * temp_a * temp_c;
 		float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a * temp_c;
 		float tempA_corY = root_a * leq_1.gradient + leq_1.basis;
@@ -120,19 +253,27 @@ void findCross(leq leq_1, ceq ceq_1, db save) {
 			if ((leq_1.corX_min <= root_a) && (leq_1.corX_max >= root_a) &&																		// Check that the cross coordinate is in the line segment.
 				(ceq_1.corX_min <= root_a) && (ceq_1.corX_max >= root_a) && (ceq_1.corY_min <= tempA_corY) && (ceq_1.corY_max >= tempA_corY)) {	// Check that the cross coordinate is in the arc of the sector.
 			
-				save.cross_type[save.ptr] = DUALROOT;
-				save.cross_corX[save.ptr] = root_a;
-				save.cross_eq1[save.ptr] = LINEAR;
-				save.cross_eq2[save.ptr] = CIRCULAR;
-				save.ptr++;
+				save->cross_type[save->ptr] = DUALROOT;
+				save->cross_corX[save->ptr] = root_a;
+				save->cross_eq1[save->ptr] = LINEAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_1;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_temp;
+				save->ptr++;
 			}
 			// Else, it means that the cross coordinate is not in the condition range.
 			else {
-				save.cross_type[save.ptr] = IMPOSSIBLE;
-				save.cross_corX[save.ptr] = root_a;
-				save.cross_eq1[save.ptr] = LINEAR;
-				save.cross_eq2[save.ptr] = CIRCULAR;
-				save.ptr++;
+				save->cross_type[save->ptr] = IMPOSSIBLE;
+				save->cross_corX[save->ptr] = root_a;
+				save->cross_eq1[save->ptr] = LINEAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_1;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_temp;
+				save->ptr++;
 			}
 		}
 		else {
@@ -143,66 +284,90 @@ void findCross(leq leq_1, ceq ceq_1, db save) {
 	
 	// two different roots
 	else {
-		float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / 2 * temp_a * temp_c;
-		float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a * temp_c;
+		float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / (2 * temp_a);
+		float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / (2 * temp_a);
 		float tempA_corY = root_a * leq_1.gradient + leq_1.basis;
 		float tempB_corY = root_b * leq_1.gradient + leq_1.basis;
 
 		// Check that the cross coordinate is in the condition range.
 		if ((leq_1.corX_min <= root_a) && (leq_1.corX_max >= root_a) &&																		// Check that the cross coordinate A is in the line segment.
 			(ceq_1.corX_min <= root_a) && (ceq_1.corX_max >= root_a) && (ceq_1.corY_min <= tempA_corY) && (ceq_1.corY_max >= tempA_corY)) {	// Check that the cross coordinate A is in the arc of the sector.
-			save.cross_type[save.ptr] = POSSIBLE;
-			save.cross_corX[save.ptr] = root_a;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = CIRCULAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = root_a;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		else {
-			save.cross_type[save.ptr] = IMPOSSIBLE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = CIRCULAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		if ((leq_1.corX_min <= root_b) && (leq_1.corX_max >= root_b) && 																	// Check that the cross coordinate B is in the line segment.
 			(ceq_1.corX_min <= root_b) && (ceq_1.corX_max >= root_b) && (ceq_1.corY_min <= tempB_corY) && (ceq_1.corY_max >= tempB_corY)) {	// Check that the cross coordinate B is in the arc of the sector.
-			save.cross_type[save.ptr] = POSSIBLE;
-			save.cross_corX[save.ptr] = root_b;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = CIRCULAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = root_b;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		else {
-			save.cross_type[save.ptr] = IMPOSSIBLE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = LINEAR;
-			save.cross_eq2[save.ptr] = CIRCULAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = LINEAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_1;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_temp;
+			save->ptr++;
 		}
 		
 	}
 }
 
-void findCross(ceq ceq_1, ceq ceq_2, db save) {
+void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 	// Since we set the 4 sectors already, we can define easily.
 	// First, we find the parallel line between two circle.
 	// Second, we determine whether the line has root with those circles.
 
 	// Pre-condition : congruence
 	if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY) && (ceq_1.radius == ceq_2.radius)) {
-		save.cross_type[save.ptr] = CONGRUENCE;
-		save.cross_corX[save.ptr] = 0;
-		save.cross_eq1[save.ptr] = CIRCULAR;
-		save.cross_eq2[save.ptr] = CIRCULAR;
-		save.ptr++;
+		save->cross_type[save->ptr] = CONGRUENCE;
+		save->cross_corX[save->ptr] = 0;
+		save->cross_eq1[save->ptr] = CIRCULAR;
+		save->cross_eq2[save->ptr] = CIRCULAR;
+		save->cross_leq1[save->ptr] = leq_temp;
+		save->cross_leq2[save->ptr] = leq_temp;
+		save->cross_ceq1[save->ptr] = ceq_1;
+		save->cross_ceq2[save->ptr] = ceq_2;
+		save->ptr++;
 	}
 	// Pre-condition : Contain (is equal to impossible)
 	else if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY)) {
-		save.cross_type[save.ptr] = IMPOSSIBLE;
-		save.cross_corX[save.ptr] = 0;
-		save.cross_eq1[save.ptr] = CIRCULAR;
-		save.cross_eq2[save.ptr] = CIRCULAR;
-		save.ptr++;
+		save->cross_type[save->ptr] = IMPOSSIBLE;
+		save->cross_corX[save->ptr] = 0;
+		save->cross_eq1[save->ptr] = CIRCULAR;
+		save->cross_eq2[save->ptr] = CIRCULAR;
+		save->cross_leq1[save->ptr] = leq_temp;
+		save->cross_leq2[save->ptr] = leq_temp;
+		save->cross_ceq1[save->ptr] = ceq_1;
+		save->cross_ceq2[save->ptr] = ceq_2;
+		save->ptr++;
 	}
 	// Pre-condition : The locational relationship between the two circle is horizontal (it means that the coordinate X of the central of the two circle are same : y = k)
 	else if (ceq_1.corX == ceq_1.corX) {
@@ -215,11 +380,15 @@ void findCross(ceq ceq_1, ceq ceq_2, db save) {
 
 		// Impossible
 		if (determinate < 0) {
-			save.cross_type[save.ptr] = IMPOSSIBLE;
-			save.cross_corX[save.ptr] = 0;
-			save.cross_eq1[save.ptr] = CIRCULAR;
-			save.cross_eq2[save.ptr] = CIRCULAR;
-			save.ptr++;
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
 		}
 		// Dual root (In between the two circle, Dual root has no meaning for overlapping)
 		else if (determinate = 0) {
@@ -227,11 +396,15 @@ void findCross(ceq ceq_1, ceq ceq_2, db save) {
 			float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a * temp_c;
 			
 			if (root_a == root_b) {
-				save.cross_type[save.ptr] = DUALROOT;
-				save.cross_corX[save.ptr] = root_a;
-				save.cross_eq1[save.ptr] = CIRCULAR;
-				save.cross_eq2[save.ptr] = CIRCULAR;
-				save.ptr++;
+				save->cross_type[save->ptr] = DUALROOT;
+				save->cross_corX[save->ptr] = root_a;
+				save->cross_eq1[save->ptr] = CIRCULAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_temp;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_2;
+				save->ptr++;
 			}
 			else {
 				printf("DUAL ROOT ERR... (CEQ and CEQ) \n");
@@ -240,6 +413,25 @@ void findCross(ceq ceq_1, ceq ceq_2, db save) {
 		}
 		else if (determinate > 0) {
 			
+		}
+	}
+}
+
+void cal(SU su1, SU su2, db* save) {
+	for (int i = 0; i < 4; i++) {
+		findCross(su1.beam[i].fleq, su1.beam[i].sleq, save);
+		findCross(su1.beam[i].fleq, su1.beam[i].tceq, save);
+		findCross(su1.beam[i].sleq, su1.beam[i].tceq, save);
+		for (int j = 0; j < 4; j++) {
+			findCross(su1.beam[i].fleq, su2.beam[j].fleq, save);
+			findCross(su1.beam[i].fleq, su2.beam[j].sleq, save);
+			findCross(su1.beam[i].fleq, su2.beam[j].tceq, save);
+			findCross(su1.beam[i].sleq, su2.beam[j].fleq, save);
+			findCross(su1.beam[i].sleq, su2.beam[j].sleq, save);
+			findCross(su1.beam[i].sleq, su2.beam[j].tceq, save);
+			findCross(su2.beam[j].fleq, su1.beam[i].tceq, save);
+			findCross(su2.beam[j].sleq, su1.beam[i].tceq, save);
+			findCross(su1.beam[i].tceq, su2.beam[j].tceq, save);
 		}
 	}
 }
