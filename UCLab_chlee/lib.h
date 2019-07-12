@@ -100,19 +100,19 @@ void checkRange(ceq* ceq_t) {
 	for (int i = ceq_t->angle_min; i <= ceq_t->angle_max; i++) {
 		// find corX_max
 		if (ceq_t->corX + ceq_t->radius * cos(getRadian(i)) >= x_max) {
-			x_max = cos(getRadian(i));
+			x_max = ceq_t->corX + ceq_t->radius * cos(getRadian(i));
 		}
 		// find corX_min
 		if (ceq_t->corX + ceq_t->radius * cos(getRadian(i) <= x_min)) {
-			x_min = cos(getRadian(i));
+			x_min = ceq_t->corX + ceq_t->radius * cos(getRadian(i));
 		}
 		// find corY_max
 		if (ceq_t->corY + ceq_t->radius * sin(getRadian(i)) >= y_max) {
-			y_max = sin(getRadian(i));
+			y_max = ceq_t->corX + ceq_t->radius * sin(getRadian(i));
 		}
 		// find corY_min
 		if (ceq_t->corY + ceq_t->radius * sin(getRadian(i)) <= y_min) {
-			y_min = sin(getRadian(i));
+			y_min = ceq_t->corX + ceq_t->radius * sin(getRadian(i));
 		}	
 	}
 
@@ -345,41 +345,128 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 	// First, we find the parallel line between two circle.
 	// Second, we determine whether the line has root with those circles.
 
-	// Pre-condition : congruence
-	if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY) && (ceq_1.radius == ceq_2.radius)) {
-		save->cross_type[save->ptr] = CONGRUENCE;
-		save->cross_corX[save->ptr] = 0;
-		save->cross_eq1[save->ptr] = CIRCULAR;
-		save->cross_eq2[save->ptr] = CIRCULAR;
-		save->cross_leq1[save->ptr] = leq_temp;
-		save->cross_leq2[save->ptr] = leq_temp;
-		save->cross_ceq1[save->ptr] = ceq_1;
-		save->cross_ceq2[save->ptr] = ceq_2;
-		save->ptr++;
-	}
-	// Pre-condition : Contain (is equal to impossible)
-	else if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY)) {
-		save->cross_type[save->ptr] = IMPOSSIBLE;
-		save->cross_corX[save->ptr] = 0;
-		save->cross_eq1[save->ptr] = CIRCULAR;
-		save->cross_eq2[save->ptr] = CIRCULAR;
-		save->cross_leq1[save->ptr] = leq_temp;
-		save->cross_leq2[save->ptr] = leq_temp;
-		save->cross_ceq1[save->ptr] = ceq_1;
-		save->cross_ceq2[save->ptr] = ceq_2;
-		save->ptr++;
-	}
-	// Pre-condition : The locational relationship between the two circle is horizontal (it means that the coordinate X of the central of the two circle are same : y = k)
-	else if (ceq_1.corX == ceq_1.corX) {
-		float temp_gradient = (ceq_2.corX - ceq_1.corX) / (ceq_1.corY - ceq_2.corY); // The gradient of the line is 0;
-		float temp_basis = (ceq_2.radius * ceq_2.radius - ceq_1.radius * ceq_1.radius) / 2 * (ceq_1.corY - ceq_2.corY);
-		float temp_a = temp_gradient * temp_gradient + 1;
-		float temp_b = ((-2.0) * ceq_1.corX) + (2 * temp_gradient * temp_basis) + ((-2.0) * temp_gradient * ceq_1.corY);
-		float temp_c = (ceq_1.corX * ceq_1.corX) + ((-2.0) * ceq_1.corY * temp_basis) + (ceq_1.corY * ceq_1.corY) - (ceq_1.radius * ceq_1.radius);
-		float determinate = (temp_b * temp_b) - (4 * temp_a * temp_c);
+	// Pre-condition : 
+	float det_ceq = sqrt(((ceq_1.corX - ceq_2.corX) * (ceq_1.corX - ceq_2.corX)) + ((ceq_1.corY - ceq_2.corY) * (ceq_1.corY - ceq_2.corY)));
+	if ((det_ceq < (ceq_1.radius + ceq_2.radius)) && (det_ceq > 0)) {
+		// Pre-condition : The locational relationship between the two circle is horizontal(it means that the coordinate Y of the central of the two circle are same : x = k)
+		if ((ceq_1.corX != ceq_2.corX) && (ceq_1.corY == ceq_2.corY)) {
+			float temp_corX = ((ceq_1.corX * ceq_1.corX - ceq_2.corX * ceq_2.corX) - (ceq_1.radius * ceq_1.radius - ceq_2.radius * ceq_2.radius)) / 2 * (ceq_1.corX - ceq_2.corX);
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = temp_corX;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
+		}
+		// Pre-condition : The locational relationship between the two circle is vertical (it means that the coordinate X of the central of the two circle are same : y = k)
+		else if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY != ceq_2.corY)) {
+			float temp_corY = ((ceq_1.corY * ceq_1.corY - ceq_2.corY * ceq_2.corY) - (ceq_1.radius * ceq_1.radius - ceq_2.radius * ceq_2.radius)) / 2 * (ceq_1.corY - ceq_2.corY);
+			float root_a = ceq_1.corX - sqrt((ceq_1.radius * ceq_1.radius) - (temp_corY - ceq_1.corY) * (temp_corY - ceq_1.corY));
+			float root_b = ceq_1.corX + sqrt((ceq_1.radius * ceq_1.radius) - (temp_corY - ceq_1.corY) * (temp_corY - ceq_1.corY));
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = root_a;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
+			save->cross_type[save->ptr] = POSSIBLE;
+			save->cross_corX[save->ptr] = root_b;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
 
-		// Impossible
-		if (determinate < 0) {
+		}
+		else if ((ceq_1.corX != ceq_2.corX) && (ceq_1.corY != ceq_2.corY)) {
+			float temp_gradient = (ceq_2.corX - ceq_1.corX) / (ceq_1.corY - ceq_2.corY); // The gradient of the line is 0;
+			float temp_basis = (ceq_2.radius * ceq_2.radius - ceq_1.radius * ceq_1.radius) / 2 * (ceq_1.corY - ceq_2.corY);
+			float temp_a = temp_gradient * temp_gradient + 1;
+			float temp_b = ((-2.0) * ceq_1.corX) + (2 * temp_gradient * temp_basis) + ((-2.0) * temp_gradient * ceq_1.corY);
+			float temp_c = (ceq_1.corX * ceq_1.corX) + ((-2.0) * ceq_1.corY * temp_basis) + (ceq_1.corY * ceq_1.corY) - (ceq_1.radius * ceq_1.radius);
+			float determinate = (temp_b * temp_b) - (4 * temp_a * temp_c);
+
+			// Impossible
+			if (determinate < 0) {
+				save->cross_type[save->ptr] = IMPOSSIBLE;
+				save->cross_corX[save->ptr] = 0;
+				save->cross_eq1[save->ptr] = CIRCULAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_temp;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_2;
+				save->ptr++;
+			}
+			// Dual root (In between the two circle, Dual root has no meaning for overlapping)
+			else if (determinate == 0) {
+				float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / 2 * temp_a;
+				float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a;
+
+				if (root_a == root_b) {
+					save->cross_type[save->ptr] = DUALROOT;
+					save->cross_corX[save->ptr] = root_a;
+					save->cross_eq1[save->ptr] = CIRCULAR;
+					save->cross_eq2[save->ptr] = CIRCULAR;
+					save->cross_leq1[save->ptr] = leq_temp;
+					save->cross_leq2[save->ptr] = leq_temp;
+					save->cross_ceq1[save->ptr] = ceq_1;
+					save->cross_ceq2[save->ptr] = ceq_2;
+					save->ptr++;
+				}
+				else {
+					printf("DUAL ROOT ERR... (CEQ and CEQ) \n");
+					system("PAUSE");
+				}
+			}
+			else if (determinate > 0) {
+				float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / 2 * temp_a;
+				float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a;
+
+				save->cross_type[save->ptr] = POSSIBLE;
+				save->cross_corX[save->ptr] = root_a;
+				save->cross_eq1[save->ptr] = CIRCULAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_temp;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_2;
+				save->ptr++;
+				save->cross_type[save->ptr] = POSSIBLE;
+				save->cross_corX[save->ptr] = root_b;
+				save->cross_eq1[save->ptr] = CIRCULAR;
+				save->cross_eq2[save->ptr] = CIRCULAR;
+				save->cross_leq1[save->ptr] = leq_temp;
+				save->cross_leq2[save->ptr] = leq_temp;
+				save->cross_ceq1[save->ptr] = ceq_1;
+				save->cross_ceq2[save->ptr] = ceq_2;
+				save->ptr++;
+			}
+		}
+	}
+	else if (det_ceq == 0) {
+		// Pre-condition : congruence
+		if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY) && (ceq_1.radius == ceq_2.radius)) {
+			save->cross_type[save->ptr] = CONGRUENCE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
+		}
+		// Pre-condition : Contain (is equal to impossible)
+		else if ((ceq_1.corX == ceq_2.corX) && (ceq_1.corY == ceq_2.corY)) {
 			save->cross_type[save->ptr] = IMPOSSIBLE;
 			save->cross_corX[save->ptr] = 0;
 			save->cross_eq1[save->ptr] = CIRCULAR;
@@ -390,32 +477,46 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 			save->cross_ceq2[save->ptr] = ceq_2;
 			save->ptr++;
 		}
-		// Dual root (In between the two circle, Dual root has no meaning for overlapping)
-		else if (determinate = 0) {
-			float root_a = (((-1.0) * temp_b) - sqrt(determinate)) / 2 * temp_a * temp_c;
-			float root_b = (((-1.0) * temp_b) + sqrt(determinate)) / 2 * temp_a * temp_c;
-			
-			if (root_a == root_b) {
-				save->cross_type[save->ptr] = DUALROOT;
-				save->cross_corX[save->ptr] = root_a;
-				save->cross_eq1[save->ptr] = CIRCULAR;
-				save->cross_eq2[save->ptr] = CIRCULAR;
-				save->cross_leq1[save->ptr] = leq_temp;
-				save->cross_leq2[save->ptr] = leq_temp;
-				save->cross_ceq1[save->ptr] = ceq_1;
-				save->cross_ceq2[save->ptr] = ceq_2;
-				save->ptr++;
-			}
-			else {
-				printf("DUAL ROOT ERR... (CEQ and CEQ) \n");
-				system("PAUSE");
-			}
-		}
-		else if (determinate > 0) {
-			
+		else {
+			printf("CIRCULAR CONDITION ERR (DET_CEQ == 0, BUT COORDINATE IS NOT SAME...\n");
+			// Pre-condition : Non-overlapping
+			save->cross_type[save->ptr] = IMPOSSIBLE;
+			save->cross_corX[save->ptr] = 0;
+			save->cross_eq1[save->ptr] = CIRCULAR;
+			save->cross_eq2[save->ptr] = CIRCULAR;
+			save->cross_leq1[save->ptr] = leq_temp;
+			save->cross_leq2[save->ptr] = leq_temp;
+			save->cross_ceq1[save->ptr] = ceq_1;
+			save->cross_ceq2[save->ptr] = ceq_2;
+			save->ptr++;
 		}
 	}
+	else if (det_ceq > (ceq_1.radius + ceq_2.radius)) {
+		// Pre-condition : Non-overlapping
+		save->cross_type[save->ptr] = IMPOSSIBLE;
+		save->cross_corX[save->ptr] = 0;
+		save->cross_eq1[save->ptr] = CIRCULAR;
+		save->cross_eq2[save->ptr] = CIRCULAR;
+		save->cross_leq1[save->ptr] = leq_temp;
+		save->cross_leq2[save->ptr] = leq_temp;
+		save->cross_ceq1[save->ptr] = ceq_1;
+		save->cross_ceq2[save->ptr] = ceq_2;
+		save->ptr++;
+	}
+	else {
+		printf("CIRCULAR CONDITON ERR (DET_CEQ)...\n");
+		save->cross_type[save->ptr] = IMPOSSIBLE;
+		save->cross_corX[save->ptr] = 0;
+		save->cross_eq1[save->ptr] = CIRCULAR;
+		save->cross_eq2[save->ptr] = CIRCULAR;
+		save->cross_leq1[save->ptr] = leq_temp;
+		save->cross_leq2[save->ptr] = leq_temp;
+		save->cross_ceq1[save->ptr] = ceq_1;
+		save->cross_ceq2[save->ptr] = ceq_2;
+		save->ptr++;
+	}
 }
+
 
 void cal(SU su1, SU su2, db* save) {
 	for (int i = 0; i < 4; i++) {
