@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #define _USE_MATHE_DEFINES
 
-#define BUFFERSIZE 10000
+#define BUFFERSIZE 15
 
 #define POSSIBLE 0 // 해를 가짐 (선분과 선분이면 1개, 선분과 호면 2개, 호와 호면 2개)
 #define DUALROOT 1 // 이중근 (선분과 호 또는 호와 호에서 이중근을 가질 수 있음)
@@ -23,6 +23,8 @@ typedef struct LinearEquation {
 	float basis;
 	float corX_min;
 	float corX_max;
+	float corY_min;
+	float corY_max;
 	int root;
 	int index;
 	int num;
@@ -49,6 +51,10 @@ typedef struct Sector {
 	leq fleq; // First Linear Equation
 	leq sleq; // Second Linear Equation
 	ceq tceq; // Third Circular Equation
+	float x_min;
+	float x_max;
+	float y_min;
+	float y_max;
 } sec;
 
 typedef struct PrimaryUser {
@@ -70,6 +76,7 @@ typedef struct SecondaryUser {
 typedef struct dataSave {
 	int ptr;
 	float cross_corX[BUFFERSIZE];
+	float cross_corY[BUFFERSIZE];
 	int cross_eq1[BUFFERSIZE];
 	int cross_eq2[BUFFERSIZE];
 	int cross_type[BUFFERSIZE];

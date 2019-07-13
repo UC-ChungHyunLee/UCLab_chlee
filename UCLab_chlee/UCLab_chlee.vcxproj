@@ -87,6 +87,9 @@
     </ClCompile>
     <Link>
       <StackReserveSize>1048576000</StackReserveSize>
+      <HeapReserveSize>1048576000</HeapReserveSize>
+      <HeapCommitSize>1048576000</HeapCommitSize>
+      <StackCommitSize>1048576000</StackCommitSize>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
