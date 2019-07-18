@@ -125,14 +125,14 @@ void init_SU(SU* su) {
 		if (cos(getRadian(45 + 90 * (i + 1))) < 0) {
 			su->beam[i].sleq.corX_min = su->corX + su->radius * cos(getRadian(45 + 90 * (i + 1)));
 			su->beam[i].sleq.corX_max = su->corX;
-			su->beam[i].fleq.corY_min = su->corY;
-			su->beam[i].fleq.corY_max = su->corY + su->radius * sin(getRadian(45 + 90 * (i + 1)));
+			su->beam[i].sleq.corY_min = su->corY;
+			su->beam[i].sleq.corY_max = su->corY + su->radius * sin(getRadian(45 + 90 * (i + 1)));
 		}
 		else {
 			su->beam[i].sleq.corX_max = su->corX + su->radius * cos(getRadian(45 + 90 * (i + 1)));
 			su->beam[i].sleq.corX_min = su->corX;
-			su->beam[i].fleq.corY_max = su->corY;
-			su->beam[i].fleq.corY_min = su->corY + su->radius * sin(getRadian(45 + 90 * (i + 1)));
+			su->beam[i].sleq.corY_max = su->corY;
+			su->beam[i].sleq.corY_min = su->corY + su->radius * sin(getRadian(45 + 90 * (i + 1)));
 		}
 
 		su->beam[i].tceq.angle_min = 45 + 90 * i;
@@ -705,7 +705,7 @@ void cal(SU su1, SU su2, db save[]) {
 
 				if ((save[(4 * i) + j].cross_corX[k] > x_max) || (save[(4 * i) + j].cross_corX[k] < x_min) || (save[(4 * i) + j].cross_corY[k] > y_max) || (save[(4 * i) + j].cross_corY[k] < y_min)) {
 					for (int l = k; l < save[(4 * i) + j].ptr; l++) {
-						if (l < BUFFERSIZE) {
+						if (l < save[(4 * i) + j].ptr - 1) {
 							save[(4 * i) + j].cross_ceq1[l] = save[(4 * i) + j].cross_ceq1[l + 1];
 							save[(4 * i) + j].cross_ceq2[l] = save[(4 * i) + j].cross_ceq2[l + 1];
 							save[(4 * i) + j].cross_leq1[l] = save[(4 * i) + j].cross_leq1[l + 1];
@@ -716,7 +716,7 @@ void cal(SU su1, SU su2, db save[]) {
 							save[(4 * i) + j].cross_corX[l] = save[(4 * i) + j].cross_corX[l + 1];
 							save[(4 * i) + j].cross_corY[l] = save[(4 * i) + j].cross_corY[l + 1];
 						}
-						else if (l == BUFFERSIZE) {
+						else if (l == save[(4 * i) + j].ptr - 1) {
 							save[(4 * i) + j].cross_ceq1[l] = ceq_temp;
 							save[(4 * i) + j].cross_ceq2[l] = ceq_temp;
 							save[(4 * i) + j].cross_leq1[l] = leq_temp;
@@ -726,18 +726,54 @@ void cal(SU su1, SU su2, db save[]) {
 							save[(4 * i) + j].cross_type[l] = -1;
 							save[(4 * i) + j].cross_corX[l] = 0.0;
 							save[(4 * i) + j].cross_corY[l] = 0.0;
+							save[(4 * i) + j].ptr--;
+							k--;
 						}
 						else {
 							printf("INSERTING ERR....\n");
 							system("PAUSE");
 						}
-						l--;
-						save[(4 * i) + j].ptr--;
+						
 					}
 				}
 			}
 
 			sortCoordinate(&save[(4 * i) + j]);
+
+			for (int k = 0; k < save[(4 * i) + j].ptr; k++) {
+				if ((save[(4 * i) + j].cross_corX[k] == save[(4 * i) + j].cross_corX[k + 1]) && (save[(4 * i) + j].cross_corY[k] == save[(4 * i) + j].cross_corY[k + 1])) {
+					for (int l = k; l < save[(4 * i) + j].ptr; l++) {
+						if (l < save[(4 * i) + j].ptr - 1) {
+							save[(4 * i) + j].cross_ceq1[l] = save[(4 * i) + j].cross_ceq1[l + 1];
+							save[(4 * i) + j].cross_ceq2[l] = save[(4 * i) + j].cross_ceq2[l + 1];
+							save[(4 * i) + j].cross_leq1[l] = save[(4 * i) + j].cross_leq1[l + 1];
+							save[(4 * i) + j].cross_leq2[l] = save[(4 * i) + j].cross_leq2[l + 1];
+							save[(4 * i) + j].cross_eq1[l] = save[(4 * i) + j].cross_eq1[l + 1];
+							save[(4 * i) + j].cross_eq2[l] = save[(4 * i) + j].cross_eq2[l + 1];
+							save[(4 * i) + j].cross_type[l] = save[(4 * i) + j].cross_type[l + 1];
+							save[(4 * i) + j].cross_corX[l] = save[(4 * i) + j].cross_corX[l + 1];
+							save[(4 * i) + j].cross_corY[l] = save[(4 * i) + j].cross_corY[l + 1];
+						}
+						else if (l == save[(4 * i) + j].ptr - 1) {
+							save[(4 * i) + j].cross_ceq1[l] = ceq_temp;
+							save[(4 * i) + j].cross_ceq2[l] = ceq_temp;
+							save[(4 * i) + j].cross_leq1[l] = leq_temp;
+							save[(4 * i) + j].cross_leq2[l] = leq_temp;
+							save[(4 * i) + j].cross_eq1[l] = -1;
+							save[(4 * i) + j].cross_eq2[l] = -1;
+							save[(4 * i) + j].cross_type[l] = -1;
+							save[(4 * i) + j].cross_corX[l] = 0.0;
+							save[(4 * i) + j].cross_corY[l] = 0.0;
+							save[(4 * i) + j].ptr--;
+							k--;
+						}
+						else {
+							printf("INSERTING ERR....\n");
+							system("PAUSE");
+						}
+					}
+				}
+			}
 		}
 	}
 }
