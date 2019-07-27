@@ -22,18 +22,17 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save);
 
 void cal(SU su1, SU su2, db save[]);
 
-void integral(leq leq_1, leq leq_2, db save);
-void integral(leq leq_1, ceq ceq_1, db save);
-void integral(ceq ceq_1, ceq ceq_2, db save);
+float integral(leq leq_1, leq leq_2, float cor_1, float cor_2);
+float integral(leq leq_1, ceq ceq_1, float cor_1, float cor_2);
+float integral(ceq ceq_1, ceq ceq_2, float cor_1, float cor_2);
 
 
 
 // Define
-
+//***************************************************************************
 double getRadian(float angle) {
 	return angle * (M_PI / 180);
 }
-
 float min(float fleq, float sleq, float tceq) {
 	if (fleq <= sleq) {
 		if (fleq <= tceq) {
@@ -52,7 +51,6 @@ float min(float fleq, float sleq, float tceq) {
 		}
 	}
 }
-
 float min(float a, float b) {
 	if (a <= b) {
 		return a;
@@ -61,7 +59,6 @@ float min(float a, float b) {
 		return b;
 	}
 }
-
 float max(float fleq, float sleq, float tceq) {
 	if (fleq >= sleq) {
 		if (fleq >= tceq) {
@@ -80,7 +77,6 @@ float max(float fleq, float sleq, float tceq) {
 		}
 	}
 }
-
 float max(float a, float b) {
 	if (a >= b) {
 		return a;
@@ -89,7 +85,7 @@ float max(float a, float b) {
 		return b;
 	}
 }
-
+//***************************************************************************
 void init_SU(SU* su) {
 	
 	for (int i = 0; i < 4; i++) {
@@ -148,7 +144,6 @@ void init_SU(SU* su) {
 		su->beam[i].y_max = max(su->beam[i].sleq.corY_max, su->beam[i].fleq.corY_max, su->beam[i].tceq.corY_max);
 	}
 }
-
 void init_DB(db* save) {
 	save->ptr = 0;
 
@@ -164,7 +159,8 @@ void init_DB(db* save) {
 		save->cross_leq2[i] = leq_temp;		
 	}
 }
-
+//***************************************************************************
+// Maximum & minimum range check
 void checkRange(ceq* ceq_t) {
 	float x_min = ceq_t->corX + ceq_t->radius * cos(getRadian(ceq_t->angle_min));
 	float x_max = ceq_t->corX + ceq_t->radius * cos(getRadian(ceq_t->angle_max));
@@ -195,8 +191,7 @@ void checkRange(ceq* ceq_t) {
 	ceq_t->corY_max = y_max;
 	ceq_t->corY_min = y_min;
 }
-
-// Bubble Sorting
+// Bubble sorting
 void sortCoordinate(db* save) {
 	float temp_corX;
 	float temp_corY;
@@ -237,7 +232,7 @@ void sortCoordinate(db* save) {
 		}
 	}
 }
-
+//***************************************************************************
 void findCross(leq leq_1, leq leq_2, db* save) {
 	float diff_gradient = leq_1.gradient - leq_2.gradient;	// leq_1 - leq_2 (left term)
 	float diff_basis = leq_2.basis - leq_1.basis;			// leq_2 - leq_1 (right term)
@@ -306,7 +301,6 @@ void findCross(leq leq_1, leq leq_2, db* save) {
 		}
 	}
 }
-
 void findCross(leq leq_1, ceq ceq_1, db* save) {
 	float temp_a = leq_1.gradient * leq_1.gradient + 1;
 	float temp_b = ((-2.0) * ceq_1.corX) + (2 * leq_1.gradient * (leq_1.basis - ceq_1.corY));
@@ -435,7 +429,6 @@ void findCross(leq leq_1, ceq ceq_1, db* save) {
 		
 	}
 }
-
 void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 	// Since we set the 4 sectors already, we can define easily.
 	// First, we find the parallel line between two circle.
@@ -670,8 +663,17 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 		*/
 	}
 }
+//***************************************************************************
+float integral(leq leq_1, leq leq_2, float cor_1, float cor_2) {
+	float temp_s = (((leq_1.gradient - leq_2.gradient) * cor_1 * cor_1) / 2.0) + ((leq_1.basis - leq_2.basis) * cor_1);
+	float temp_e = (((leq_1.gradient - leq_2.gradient) * cor_2 * cor_2) / 2.0) + ((leq_1.basis - leq_2.basis) * cor_2);
 
+	return temp_e - temp_s;
+}
+float integral(leq leq_1, ceq ceq_1, float cor_1, float cor_2) {
 
+}
+//***************************************************************************
 void cal(SU su1, SU su2, db save[]) {
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {
@@ -740,6 +742,7 @@ void cal(SU su1, SU su2, db save[]) {
 
 			sortCoordinate(&save[(4 * i) + j]);
 
+			// Duplicate Delete
 			for (int k = 0; k < save[(4 * i) + j].ptr; k++) {
 				if ((save[(4 * i) + j].cross_corX[k] == save[(4 * i) + j].cross_corX[k + 1]) && (save[(4 * i) + j].cross_corY[k] == save[(4 * i) + j].cross_corY[k + 1])) {
 					for (int l = k; l < save[(4 * i) + j].ptr; l++) {
@@ -774,6 +777,43 @@ void cal(SU su1, SU su2, db save[]) {
 					}
 				}
 			}
+			// Under Tri-Cross-Coordinates, it means non-overlapping.
+			if (save[(4 * i) + j].ptr < 3) {
+				for (int k = 0; k < save[(4 * i) + j].ptr; k++) {
+					for (int l = k; l < save[(4 * i) + j].ptr; l++) {
+						if (l < save[(4 * i) + j].ptr - 1) {
+							save[(4 * i) + j].cross_ceq1[l] = save[(4 * i) + j].cross_ceq1[l + 1];
+							save[(4 * i) + j].cross_ceq2[l] = save[(4 * i) + j].cross_ceq2[l + 1];
+							save[(4 * i) + j].cross_leq1[l] = save[(4 * i) + j].cross_leq1[l + 1];
+							save[(4 * i) + j].cross_leq2[l] = save[(4 * i) + j].cross_leq2[l + 1];
+							save[(4 * i) + j].cross_eq1[l] = save[(4 * i) + j].cross_eq1[l + 1];
+							save[(4 * i) + j].cross_eq2[l] = save[(4 * i) + j].cross_eq2[l + 1];
+							save[(4 * i) + j].cross_type[l] = save[(4 * i) + j].cross_type[l + 1];
+							save[(4 * i) + j].cross_corX[l] = save[(4 * i) + j].cross_corX[l + 1];
+							save[(4 * i) + j].cross_corY[l] = save[(4 * i) + j].cross_corY[l + 1];
+						}
+						else if (l == save[(4 * i) + j].ptr - 1) {
+							save[(4 * i) + j].cross_ceq1[l] = ceq_temp;
+							save[(4 * i) + j].cross_ceq2[l] = ceq_temp;
+							save[(4 * i) + j].cross_leq1[l] = leq_temp;
+							save[(4 * i) + j].cross_leq2[l] = leq_temp;
+							save[(4 * i) + j].cross_eq1[l] = -1;
+							save[(4 * i) + j].cross_eq2[l] = -1;
+							save[(4 * i) + j].cross_type[l] = -1;
+							save[(4 * i) + j].cross_corX[l] = 0.0;
+							save[(4 * i) + j].cross_corY[l] = 0.0;
+							save[(4 * i) + j].ptr--;
+							k--;
+						}
+						else {
+							printf("INSERTING ERR....\n");
+							system("PAUSE");
+						}
+					}
+				}
+			}
+
 		}
+		
 	}
 }
