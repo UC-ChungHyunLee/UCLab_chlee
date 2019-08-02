@@ -20,6 +20,7 @@ int main(void) {
 	for (int i = 0; i < 16; i++) {
 		init_DB(&save[i]);
 	}
+	/*
 	cal(testSU1, testSU2, save);
 	for (int i = 0; i < 4; i++) {
 		printf("SU #1의 %d번째 Beam &\n ", i);
@@ -31,7 +32,17 @@ int main(void) {
 			printf("\n");
 		}
 	}
+	*/
+	
+	save[0].cross_corX[0] = 2;
+	save[0].cross_corY[0] = 4;
+	save[0].cross_corX[1] = 2.5858;
+	save[0].cross_corY[1] = 2.5858;
 
+	float temp = integral(testSU1.beam->tceq, testSU2.beam->tceq, save[0], 0, 1);
+
+	printf("%.4f\n", temp);
+	
 	/*
 	printf("#%d SU와 #%d SU간 교점 테스트..\n", testSU1.index, testSU2.index);
 	for (int i = 0; i < save.ptr; i++) {

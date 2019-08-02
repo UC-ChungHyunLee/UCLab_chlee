@@ -18,6 +18,8 @@
 #define LINEAR 0
 #define CIRCULAR 1
 
+#define EPSILON 0.01
+
 typedef struct LinearEquation {
 	float gradient;
 	float basis;

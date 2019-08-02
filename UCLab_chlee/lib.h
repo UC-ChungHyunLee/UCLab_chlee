@@ -22,9 +22,9 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save);
 
 void cal(SU su1, SU su2, db save[]);
 
-float integral(leq leq_1, leq leq_2, float cor_1, float cor_2);
-float integral(leq leq_1, ceq ceq_1, float cor_1, float cor_2);
-float integral(ceq ceq_1, ceq ceq_2, float cor_1, float cor_2);
+float integral(leq leq_1, leq leq_2, db save[], int ptr_s, int ptr_e);
+float integral(leq leq_1, ceq ceq_1, db save[], int ptr_s, int ptr_e);
+float integral(ceq ceq_1, ceq ceq_2, db save[], int ptr_s, int ptr_e);
 
 
 
@@ -664,15 +664,125 @@ void findCross(ceq ceq_1, ceq ceq_2, db* save) {
 	}
 }
 //***************************************************************************
-float integral(leq leq_1, leq leq_2, float cor_1, float cor_2) {
-	float temp_s = (((leq_1.gradient - leq_2.gradient) * cor_1 * cor_1) / 2.0) + ((leq_1.basis - leq_2.basis) * cor_1);
-	float temp_e = (((leq_1.gradient - leq_2.gradient) * cor_2 * cor_2) / 2.0) + ((leq_1.basis - leq_2.basis) * cor_2);
+float integral(leq leq_1, leq leq_2, db save, int ptr_s, int ptr_e) {
+	float temp_s = (((leq_1.gradient - leq_2.gradient) * save.cross_corX[ptr_s] * save.cross_corX[ptr_s]) / 2.0) + ((leq_1.basis - leq_2.basis) * save.cross_corX[ptr_s]);
+	float temp_e = (((leq_1.gradient - leq_2.gradient) * save.cross_corX[ptr_e] * save.cross_corX[ptr_e]) / 2.0) + ((leq_1.basis - leq_2.basis) * save.cross_corX[ptr_e]);
 
 	return temp_e - temp_s;
 }
-float integral(leq leq_1, ceq ceq_1, float cor_1, float cor_2) {
 
+float integral(leq leq_1, ceq ceq_1, db save, int ptr_s, int ptr_e) {
+	float theta_s = (float)acos((save.cross_corX[ptr_s] - ceq_1.corX) / ceq_1.radius);
+	float theta_e = (float)acos((save.cross_corX[ptr_e] - ceq_1.corX) / ceq_1.radius);
+	float temp_leq_s = (leq_1.gradient / 2.0) * (save.cross_corX[ptr_s] * save.cross_corX[ptr_s]) + leq_1.basis * save.cross_corX[ptr_s];
+	float temp_leq_e = (leq_1.gradient / 2.0) * (save.cross_corX[ptr_e] * save.cross_corX[ptr_e]) + leq_1.basis * save.cross_corX[ptr_e];
+
+	if (save.cross_corY[ptr_s] < ceq_1.corY) {
+		float temp_ceq_s = ceq_1.corY * save.cross_corX[ptr_s] + ((theta_s / 2.0) - (sin(theta_s) * sin(theta_s) * sin(theta_s) * sin(theta_s)) / 4.0);
+		float temp_ceq_e = ceq_1.corY * save.cross_corX[ptr_e] + ((theta_e / 2.0) - (sin(theta_e) * sin(theta_e) * sin(theta_e) * sin(theta_e)) / 4.0);
+
+		float temp_s = temp_leq_s - temp_ceq_s;
+		float temp_e = temp_leq_e - temp_ceq_e;
+			
+		return temp_e - temp_s;
+	}
+	else {
+		float temp_ceq_s = ceq_1.corY * save.cross_corX[ptr_s] - ((theta_s / 2.0) - (sin(theta_s) * sin(theta_s) * sin(theta_s) * sin(theta_s)) / 4.0);
+		float temp_ceq_e = ceq_1.corY * save.cross_corX[ptr_e] - ((theta_e / 2.0) - (sin(theta_e) * sin(theta_e) * sin(theta_e) * sin(theta_e)) / 4.0);
+
+		float temp_s = temp_leq_s - temp_ceq_s;
+		float temp_e = temp_leq_e - temp_ceq_e;
+
+		return temp_e - temp_s;
+	}
 }
+
+float integral(ceq ceq_1, leq leq_1, db save, int ptr_s, int ptr_e) {
+	float theta_s = (float)acos((save.cross_corX[ptr_s] - ceq_1.corX) / ceq_1.radius);
+	float theta_e = (float)acos((save.cross_corX[ptr_e] - ceq_1.corX) / ceq_1.radius);
+	float temp_leq_s = (leq_1.gradient / 2.0) * (save.cross_corX[ptr_s] * save.cross_corX[ptr_s]) + leq_1.basis * save.cross_corX[ptr_s];
+	float temp_leq_e = (leq_1.gradient / 2.0) * (save.cross_corX[ptr_e] * save.cross_corX[ptr_e]) + leq_1.basis * save.cross_corX[ptr_e];
+
+	if (save.cross_corY[ptr_s] < ceq_1.corY) {
+		float temp_ceq_s = ceq_1.corY * save.cross_corX[ptr_s] + ((theta_s / 2.0) - (sin(theta_s) * sin(theta_s) * sin(theta_s) * sin(theta_s)) / 4.0);
+		float temp_ceq_e = ceq_1.corY * save.cross_corX[ptr_e] + ((theta_e / 2.0) - (sin(theta_e) * sin(theta_e) * sin(theta_e) * sin(theta_e)) / 4.0);
+
+		float temp_s = temp_ceq_s - temp_leq_s;
+		float temp_e = temp_ceq_e - temp_leq_e;
+
+		return temp_e - temp_s;
+	}
+	else if (save.cross_corY[ptr_s] == ceq_1.corY) {
+		if(
+	}
+	else {
+		float temp_ceq_s = ceq_1.corY * save.cross_corX[ptr_s] - ((theta_s / 2.0) - (sin(theta_s) * sin(theta_s) * sin(theta_s) * sin(theta_s)) / 4.0);
+		float temp_ceq_e = ceq_1.corY * save.cross_corX[ptr_e] - ((theta_e / 2.0) - (sin(theta_e) * sin(theta_e) * sin(theta_e) * sin(theta_e)) / 4.0);
+
+		float temp_s = temp_ceq_s - temp_leq_s;
+		float temp_e = temp_ceq_e - temp_leq_e;
+
+		return temp_e - temp_s;
+	}
+}
+
+float integral(ceq ceq_1, ceq ceq_2, db save, int ptr_s, int ptr_e) {
+	float theta_s_1 = (float)acos((save.cross_corX[ptr_s] - ceq_1.corX) / ceq_1.radius);
+	float theta_e_1 = (float)acos((save.cross_corX[ptr_e] - ceq_1.corX) / ceq_1.radius);
+	float theta_s_2 = (float)acos((save.cross_corX[ptr_s] - ceq_2.corX) / ceq_2.radius);
+	float theta_e_2 = (float)acos((save.cross_corX[ptr_e] - ceq_2.corX) / ceq_2.radius);
+
+	
+	if (save.cross_corY[ptr_s] < ceq_1.corY) {
+		if (save.cross_corY[ptr_s] < ceq_2.corY) {
+			float temp_ceq_s_1 = ceq_1.corY * save.cross_corX[ptr_s] + ((theta_s_1 / 2.0) - (sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1)) / 4.0);
+			float temp_ceq_e_1 = ceq_1.corY * save.cross_corX[ptr_e] + ((theta_e_1 / 2.0) - (sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1)) / 4.0);
+			float temp_ceq_s_2 = ceq_2.corY * save.cross_corX[ptr_s] + ((theta_s_2 / 2.0) - (sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2)) / 4.0);
+			float temp_ceq_e_2 = ceq_2.corY * save.cross_corX[ptr_e] + ((theta_e_2 / 2.0) - (sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2)) / 4.0);
+
+			float temp_s = temp_ceq_s_1 - temp_ceq_s_2;
+			float temp_e = temp_ceq_e_1 - temp_ceq_e_2;
+
+			return temp_e - temp_s;
+		}
+		else {
+			float temp_ceq_s_1 = ceq_1.corY * save.cross_corX[ptr_s] + ((theta_s_1 / 2.0) - (sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1)) / 4.0);
+			float temp_ceq_e_1 = ceq_1.corY * save.cross_corX[ptr_e] + ((theta_e_1 / 2.0) - (sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1)) / 4.0);
+			float temp_ceq_s_2 = ceq_2.corY * save.cross_corX[ptr_s] - ((theta_s_2 / 2.0) - (sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2)) / 4.0);
+			float temp_ceq_e_2 = ceq_2.corY * save.cross_corX[ptr_e] - ((theta_e_2 / 2.0) - (sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2)) / 4.0);
+
+			float temp_s = temp_ceq_s_1 - temp_ceq_s_2;
+			float temp_e = temp_ceq_e_1 - temp_ceq_e_2;
+
+			return temp_e - temp_s;
+		}
+	}
+	else {
+		if (save.cross_corY[ptr_s] < ceq_2.corY) {
+			float temp_ceq_s_1 = ceq_1.corY * save.cross_corX[ptr_s] - ((theta_s_1 / 2.0) - (sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1)) / 4.0);
+			float temp_ceq_e_1 = ceq_1.corY * save.cross_corX[ptr_e] - ((theta_e_1 / 2.0) - (sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1)) / 4.0);
+			float temp_ceq_s_2 = ceq_2.corY * save.cross_corX[ptr_s] + ((theta_s_2 / 2.0) - (sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2)) / 4.0);
+			float temp_ceq_e_2 = ceq_2.corY * save.cross_corX[ptr_e] + ((theta_e_2 / 2.0) - (sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2)) / 4.0);
+
+			float temp_s = temp_ceq_s_1 - temp_ceq_s_2;
+			float temp_e = temp_ceq_e_1 - temp_ceq_e_2;
+
+			return temp_e - temp_s;
+		}
+		else {
+			float temp_ceq_s_1 = ceq_1.corY * save.cross_corX[ptr_s] - ((theta_s_1 / 2.0) - (sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1) * sin(theta_s_1)) / 4.0);
+			float temp_ceq_e_1 = ceq_1.corY * save.cross_corX[ptr_e] - ((theta_e_1 / 2.0) - (sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1) * sin(theta_e_1)) / 4.0);
+			float temp_ceq_s_2 = ceq_2.corY * save.cross_corX[ptr_s] - ((theta_s_2 / 2.0) - (sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2) * sin(theta_s_2)) / 4.0);
+			float temp_ceq_e_2 = ceq_2.corY * save.cross_corX[ptr_e] - ((theta_e_2 / 2.0) - (sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2) * sin(theta_e_2)) / 4.0);
+
+			float temp_s = temp_ceq_s_1 - temp_ceq_s_2;
+			float temp_e = temp_ceq_e_1 - temp_ceq_e_2;
+
+			return temp_e - temp_s;
+		}
+	}
+}	
+
 //***************************************************************************
 void cal(SU su1, SU su2, db save[]) {
 	for (int i = 0; i < 4; i++) {
